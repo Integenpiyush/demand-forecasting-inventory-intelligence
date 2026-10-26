@@ -38,6 +38,7 @@
 - Added project README and interview defense notes. Verification passed: Python compilation and 4 pytest checks.
 - Added an interactive Streamlit dashboard with model comparison, grouped error summaries, inventory proxy summaries, methodology, and CSV downloads. It publishes aggregate outputs only; row-level and per-store files remain gitignored.
 - Added a separate dashboard dependency set (Streamlit 1.51.0 with pandas 2.2.3) so it does not alter the model-training environment (pandas 3.1.0).
+- Pushed the completed project to GitHub (`ce9a61f`) and deployed the public dashboard to Streamlit Community Cloud on Python 3.12. Verified the live model comparison, error-analysis, and inventory tabs. Public results cover 50 sampled stores only.
 
 ## Dataset notes
 - Raw files are local in `data/raw/` and excluded from Git by `.gitignore`.

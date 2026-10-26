@@ -12,7 +12,9 @@ Complete the browser/device-code steps shown by GitHub, then verify with `gh aut
 
 ## Streamlit Community Cloud
 
-After the project commit is pushed, deploy the dashboard:
+The app is deployed at [demand-forecasting-inventory-intelligence-bk8hrfzrqmicjhie9njz.streamlit.app](https://demand-forecasting-inventory-intelligence-bk8hrfzrqmicjhie9njz.streamlit.app/). It runs on Python 3.12 with `dashboard/app.py` as the entry point.
+
+To recreate the deployment:
 
 1. Sign in at [Streamlit Community Cloud](https://share.streamlit.io/) with GitHub.
 2. Create an app from `Integenpiyush/demand-forecasting-inventory-intelligence` on branch `main`.
