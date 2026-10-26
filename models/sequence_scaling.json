@@ -1,0 +1,20 @@
+{
+  "history_days": 14,
+  "sales_mean_train": 6035.364462280874,
+  "sales_std_train": 4295.569637469516,
+  "exog_numeric": [
+    "weekday",
+    "month",
+    "Promo",
+    "Open",
+    "SchoolHoliday",
+    "Promo2",
+    "CompetitionDistance"
+  ],
+  "exog_categorical": [
+    "StateHoliday",
+    "StoreType",
+    "Assortment",
+    "Store"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "history_days": 14,
+  "validation_days": 42,
+  "test_days": 42,
+  "split_dates": {
+    "validation_start": "2015-05-09",
+    "test_start": "2015-06-20",
+    "last_date": "2015-07-31"
+  },
+  "train_rows_tabular": 41022,
+  "validation_rows_tabular": 2100,
+  "test_rows_tabular": 2100,
+  "train_rows_sequence": 40616,
+  "validation_rows_sequence": 2100,
+  "test_rows_sequence": 2100,
+  "protocol": "rolling one-day-ahead; observed prior-day sales may be used for later test dates; fit is train-only; date-exact lags; missing history omitted",
+  "sample_scope": "50 sampled stores only; no claim of generalization to all 1,115 stores",
+  "validation_selected_model": "GRU"
+}

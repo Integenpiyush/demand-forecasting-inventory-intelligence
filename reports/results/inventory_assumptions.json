@@ -1,0 +1,11 @@
+{
+  "forecast_model": "GRU",
+  "lead_time_days": 3,
+  "pooled_validation_residual_sd": 813.9386376731554,
+  "service_level_z_values": {
+    "0.9": 1.2816,
+    "0.95": 1.6449,
+    "0.99": 2.3263
+  },
+  "interpretation": "Illustrative sales-value demand proxy, not physical inventory units. Uses pooled validation residual variation, a constant 3-day lead time, normal-demand z values, and independent daily errors; no stockouts, costs, pack sizes, or store-specific lead-time data are modeled."
+}
