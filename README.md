@@ -4,7 +4,7 @@ This repository implements a CPU-friendly, reproducible Rossmann Store Sales for
 
 ## Current project status
 
-The project contains a data audit, exploratory plots, date-exact lag features, a rolling one-day-ahead forecasting experiment, classical baselines, Linear Regression, four PyTorch sequence architectures (1D CNN, vanilla RNN, LSTM, GRU), evaluation outputs, and an illustrative inventory calculation. See [`PROGRESS.md`](PROGRESS.md) for completed steps and measured findings. Results are created locally when the experiment finishes; no score is promised in advance.
+The project contains a data audit, exploratory plots, date-exact lag features, a rolling one-day-ahead forecasting experiment, classical baselines, Linear Regression, CNN/RNN/LSTM/GRU models, and a PyTorch Transformer with learned store embeddings and P10/P50/P90 predictive quantiles. It includes chronological evaluation, empirical quantile calibration, a Streamlit dashboard, and sales-value inventory planning proxies. See [`PROGRESS.md`](PROGRESS.md) for measured findings; do not generalize the 50-store sample to all stores.
 
 The MIT license in this repository covers the project code only. Kaggle competition data retains its own terms; raw source files, row-level forecasts, per-store outputs, and EDA plots are excluded from Git. The dashboard uses aggregate experiment summaries.
 
@@ -49,14 +49,15 @@ python src/prepare_data.py
 python src/inspect_data.py
 python src/eda.py
 python src/forecast.py
-python src/inventory.py
+python src/probabilistic.py
+python src/inventory.py --lead-days 3
 python src/error_analysis.py
 python src/publish_dashboard_data.py
 ```
 
 ## Interactive dashboard
 
-The dashboard browses the checked-in experiment outputs. It does not upload user data or retrain models. To run it locally in an isolated environment, use:
+The dashboard browses checked-in experiment outputs, including sampled-store Transformer quantiles and inventory scenarios. It does not upload user data or retrain models. To run it locally in an isolated environment, use:
 
 ```sh
 python3.12 -m venv .venv-dashboard
@@ -76,7 +77,7 @@ Linear Regression fits preprocessing (median imputation, standardization, catego
 ## Outputs
 
 - `reports/figures/`: descriptive plots for sample coverage, weekday sales, promotion association, sales distribution, and store-level variability.
-- `reports/results/model_metrics.csv`: RMSE, MAE, and WAPE on the held-out test block.
+- `reports/results/model_metrics.csv`: RMSE, MAE, and WAPE on the held-out test block, including Transformer median forecasts after `probabilistic.py` runs.
 - `reports/results/test_predictions.csv`: actual and predicted sales for evaluated test rows.
 - `reports/results/validation_predictions.csv` and `validation_metrics.csv`: local validation forecasts and scores, used to select the inventory demonstration model without consulting test scores.
 - `reports/results/test_error_by_weekday.csv`, `test_error_by_promo.csv`, and `test_error_by_store.csv`: local held-out error slices for the validation-selected model.
@@ -84,14 +85,38 @@ Linear Regression fits preprocessing (median imputation, standardization, catego
 - `models/`: fitted Linear Regression pipeline, neural model state dictionaries, and the deep-model preprocessing/scaling metadata.
 - `reports/results/inventory_reorder_points.csv`: per-store illustrative lead-time demand, safety-stock, and reorder-point proxies.
 - `reports/results/inventory_assumptions.json`: inventory formula assumptions.
-- `reports/results/dashboard_*.csv` and `dashboard_experiment.json`: aggregate-only outputs used by the public dashboard; row-level actuals, predictions, and per-store inventory outputs are gitignored.
+- `reports/results/transformer_quantile_predictions.csv`: validation and test P10/P50/P90 for each supported sampled-store forecast date.
+- `reports/results/transformer_quantile_metrics.csv`: validation/test median WAPE, MAE, RMSE, quantile pinball losses, and empirical coverage.
+- `reports/results/transformer_calibration_slices.csv`: quantile calibration and median-error slices by store, promotion, and weekday where sample size permits.
+- `models/transformer_quantile.pt`: trained Transformer weights, store-to-embedding mapping, and training-only normalization metadata.
+- `reports/results/dashboard_*.csv` and `dashboard_experiment.json`: public dashboard outputs. The Transformer dashboard forecast artifact contains only the fixed sample's validation/test dates, Store IDs, actual Sales, promotions, and P10/P50/P90 predictions; raw Kaggle source files remain local and gitignored.
 - `docs/deployment.md`: GitHub authentication and Streamlit Community Cloud deployment steps.
 
 WAPE is `sum(abs(actual - forecast)) / sum(abs(actual))`. RMSE emphasizes large misses; MAE is average absolute error. Lower is better for all three. Compare models only with their row counts and evaluation scope in view.
 
+## Transformer quantile model
+
+`src/probabilistic.py` implements a two-layer, four-head PyTorch Transformer encoder over the previous 14 exact calendar days. Each token contains historical sales, weekday, month, promotion, open status, school holiday, Promo2 flag, and competition distance. A learned positional vector preserves order. Target-date known features and a learned Store embedding are joined to the encoded history. Store index 0 is reserved for unseen IDs; a new store maps safely to that index but has no learned store-specific signal and is not considered supported by this experiment.
+
+`Customers` and same-day actual `Sales` are excluded. Imputation and scaling statistics use training rows only. The model minimizes mean pinball loss for q=0.1, 0.5, and 0.9. It predicts an unconstrained standardized median with positive gaps on either side, then inverse-scales, clips negative Sales to zero, and enforces order. This avoids incorrectly forcing standardized outputs to be positive. Additive quantile offsets are calibrated from validation residual quantiles only; test data is not used for calibration. The median is evaluated with WAPE, MAE, and RMSE; quantiles are evaluated with pinball loss and empirical coverage. P10/P50/P90 are predictive quantiles, not confidence intervals. Since Sales cannot be negative and a nontrivial fraction of targets are zero, empirical P10 coverage cannot reach 10% in every segment; this is reported rather than hidden.
+
+Run the existing deterministic CNN/RNN/LSTM/GRU/baseline experiment first, then run `python src/probabilistic.py --history-days 14`. Change the argument to evaluate another history length; 14 days is the default and initial comparable configuration. Transformer rows are added to the existing validation and test model metric tables, retaining prior model rows. Validation WAPE selects the model; the 42-day final test block is used only for final reporting. Training uses CPU, seed 42, AdamW, gradient clipping, up to 40 epochs, and validation pinball early stopping. Training time and epoch count are recorded in `experiment.json`.
+
+Latest fixed-seed run: the Transformer trained for 34 epochs in 133.8 seconds on this Mac CPU. It was selected by validation WAPE (7.87%). Test median results were WAPE **8.57%**, MAE **535.30**, and RMSE **893.60** over 2,100 targets. The GRU comparison was 8.85% test WAPE; this is a small observed advantage on this one sampled split, not a claim of general superiority. Transformer test P10–P90 coverage was 81.6% against a nominal central 80%; P90 coverage was 90.1%. P10 coverage was 22.6%, partly constrained by nonnegative predictions and zero-sales observations. See [`transformer_quantile_metrics.csv`](reports/results/transformer_quantile_metrics.csv) and [`model_metrics.csv`](reports/results/model_metrics.csv) for complete metrics.
+
 ## Inventory interpretation
 
-The inventory module uses the model with the lowest validation WAPE and that model's pooled validation residual standard deviation for uncertainty. It demonstrates `reorder point = lead-time demand + z × residual SD × sqrt(lead time)` for 90%, 95%, and 99% service-level z values and an assumed three-day lead time. Rossmann `Sales` is a monetary sales value, not item-level unit demand. These outputs are therefore illustrative sales-value proxies, not executable replenishment recommendations. The calculation assumes constant lead time, approximately normal independent daily errors, and does not model stockouts, costs, pack sizes, or item assortment.
+When Transformer quantile artifacts exist, `src/inventory.py` and the dashboard estimate safety stock from empirical quantiles of contiguous validation actual-minus-P50 errors summed over the selected lead time. This captures the observed multi-day residual distribution without imposing a normal distribution. The default lead time is three calendar days; the dashboard allows 1–14 days and the script accepts `--lead-days`. For 90%, 95%, and 99% service-level assumptions, the safety buffer is the corresponding empirical validation-error quantile; reorder point proxy is expected lead-time Sales forecast plus that buffer. The dashboard also reports historical validation buffer coverage and exceedance frequency as diagnostics. They are **not observed stockout probabilities** because no stockout labels or inventory-on-hand data exist. For the 3-day, 95% scenario, the median reorder-point proxy was approximately 19,450 Sales-value units across 50 stores. Rossmann `Sales` is monetary sales value, not item-level unit demand, so these are planning proxies, not physical reorder quantities.
+
+## Testing and compute
+
+Run the lightweight fixture end-to-end smoke test and correctness checks with:
+
+```sh
+.venv/bin/pytest -q
+```
+
+This checks date splitting/lags, Transformer forward and optimizer steps, unknown-store embedding behavior, quantile ordering, pinball loss, and lead-time residual calculations. Full experiment commands are listed under “Run the project”; `forecast.py` trains the existing models and `probabilistic.py` trains the Transformer on the fixed sample. Both are CPU workloads; Transformer runtime is reported in the experiment metadata.
 
 ## Validation and limitations
 

@@ -67,5 +67,14 @@
   "validation_rows_sequence": 2100,
   "test_rows_sequence": 2100,
   "protocol": "rolling one-day-ahead; observed prior-day sales may be used for later test dates; fit is train-only; date-exact lags; missing history omitted",
-  "sample_scope": "50 sampled stores only; no claim of generalization to all 1,115 stores"
+  "sample_scope": "50 sampled stores only; no claim of generalization to all 1,115 stores",
+  "transformer_training_seconds": 133.8120693329838,
+  "transformer_epochs_trained": 34,
+  "transformer_unknown_store_policy": "reserved embedding index 0; training samples use known store IDs",
+  "transformer_quantile_calibration": "Per-quantile additive offsets fit on validation residual quantiles; final test is not used for calibration. Calibrated outputs are clipped to nonnegative sales and sorted.",
+  "transformer_quantile_calibration_offsets_sales": [
+    0.0,
+    0.0,
+    4.006603247192723
+  ]
 }

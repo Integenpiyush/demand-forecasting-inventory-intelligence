@@ -45,3 +45,14 @@
 - The experiment is explicitly 50-store only; its measured results do not establish performance across all 1,115 stores.
 - Forecast protocol: rolling one-day-ahead over chronological validation and test blocks; earlier observed target values may enter later-day lag inputs, while model fitting is train-only.
 - Sample is store-type imbalanced, and eight sampled stores share a six-month missing observation interval; this experiment does not establish performance across all 1,115 stores.
+# Upgrade log — 2026-10-27
+
+- Inspected the existing forecasting pipeline, dashboard, artifacts, model definitions, chronological split, and normal-error inventory proxy before editing.
+- Added a 14-day PyTorch Transformer with learned temporal position vectors and learned Store embeddings; reserved index 0 handles unseen store IDs safely.
+- Added ordered nonnegative P10/P50/P90 predictions using pinball loss, with per-quantile additive offsets fit from validation residuals only. Test data was not used for calibration or selection.
+- Added quantile pinball/coverage metrics and calibration slices by store, promotion, and weekday where sample sizes permit.
+- Updated inventory scenarios to estimate safety buffers from empirical contiguous lead-time validation residuals. The dashboard supports 1–14 lead days and 90%, 95%, 99% assumptions. These remain sales-value proxies; actual stockout probability is unavailable without inventory and stockout labels.
+- Extended the Streamlit dashboard with model comparison, test error analysis, quantiles, a selected-store forecast plot, and configurable inventory scenarios. Unknown stores display an explicit unsupported message.
+- Actual fixed-seed run: 34 epochs, 133.8 seconds CPU; Transformer validation WAPE 7.87%, final test WAPE 8.57%, MAE 535.30, RMSE 893.60 on 2,100 test rows across 50 sampled stores. Test P10–P90 coverage 81.6%, P90 coverage 90.1%; P10 coverage 22.6%, constrained in part by zero-demand mass and the nonnegative forecast requirement.
+- Updated README and deployment instructions with measured results, calibration, assumptions, commands, and data limitations.
+- Verification: 12 pytest checks pass; Python compile check passes; Streamlit AppTest loads all five tabs without exceptions. Live TCP startup was blocked by the local sandbox's socket permission, so it was verified through Streamlit's in-process AppTest instead.

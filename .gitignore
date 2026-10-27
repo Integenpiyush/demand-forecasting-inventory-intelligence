@@ -10,4 +10,6 @@ reports/results/test_predictions.csv
 reports/results/validation_predictions.csv
 reports/results/inventory_reorder_points.csv
 reports/results/test_error_by_store.csv
+reports/results/transformer_quantile_predictions.csv
+reports/results/transformer_calibration_slices.csv
 reports/figures/

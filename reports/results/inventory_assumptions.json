@@ -1,11 +1,7 @@
 {
-  "forecast_model": "GRU",
+  "forecast_model": "Transformer P50",
   "lead_time_days": 3,
-  "pooled_validation_residual_sd": 813.9386376731554,
-  "service_level_z_values": {
-    "0.9": 1.2816,
-    "0.95": 1.6449,
-    "0.99": 2.3263
-  },
-  "interpretation": "Illustrative sales-value demand proxy, not physical inventory units. Uses pooled validation residual variation, a constant 3-day lead time, normal-demand z values, and independent daily errors; no stockouts, costs, pack sizes, or store-specific lead-time data are modeled."
+  "uncertainty_method": "Empirical quantiles of contiguous validation actual-minus-P50 errors summed over the configured lead time; no normality assumption.",
+  "lead_time_residual_windows": 2000,
+  "interpretation": "Illustrative sales-value planning proxy, not physical inventory units. Empirical validation residual exceedance estimates forecast-buffer coverage only; there are no actual stockout labels, inventory balances, costs, pack sizes, or store-specific lead-time data."
 }

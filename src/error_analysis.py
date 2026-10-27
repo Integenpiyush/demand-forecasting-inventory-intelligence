@@ -19,8 +19,13 @@ FIGURES = ROOT / "reports" / "figures"
 
 def main() -> None:
     predictions = pd.read_csv(RESULTS / "test_predictions.csv", parse_dates=["Date"])
+    quantile_path = RESULTS / "transformer_quantile_predictions.csv"
+    if quantile_path.is_file():
+        quantiles = pd.read_csv(quantile_path, parse_dates=["Date"])
+        transformer_test = quantiles.loc[quantiles.split == "test", ["Store", "Date", "P50"]].rename(columns={"P50": "Transformer"})
+        predictions = predictions.merge(transformer_test, on=["Store", "Date"], how="left", validate="one_to_one")
     frame = pd.read_csv(ROOT / "data" / "raw" / "train.csv", parse_dates=["Date"], dtype={"StateHoliday": "string"})
-    selected = str(pd.read_csv(RESULTS / "validation_metrics.csv").iloc[0]["model"])
+    selected = str(pd.read_csv(RESULTS / "validation_metrics.csv").sort_values("WAPE").iloc[0]["model"])
     ids = json.loads((ROOT / "config" / "store_sample.json").read_text())["store_ids"]
     test = predictions.merge(frame[["Store", "Date", "DayOfWeek", "Promo"]], on=["Store", "Date"], how="left", validate="one_to_one")
     test["error"] = test[selected] - test.target
